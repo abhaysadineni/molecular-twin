@@ -1,0 +1,167 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MDT, the molecular digital twin</title>
+<meta name="description" content="A digital twin of a single biomolecule: structure and temperature in, energy and light out, kept true by measurement. Prototype.">
+<meta name="theme-color" content="#020308">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%23020308'/%3E%3Ccircle cx='32' cy='32' r='10' fill='%236fe7ff'/%3E%3Ccircle cx='32' cy='32' r='20' fill='none' stroke='%236fe7ff' stroke-opacity='.5' stroke-width='2'/%3E%3C/svg%3E">
+<link rel="stylesheet" href="assets/app.c64faf4c7b.css">
+</head>
+<body class="pre">
+<canvas id="stage" aria-label="Three-dimensional view of the molecular twin"></canvas>
+<div id="labels" aria-hidden="true"></div>
+
+<header class="top">
+  <a class="brand" href="#/" aria-label="MDT home">
+    <span class="mark" aria-hidden="true"><i></i></span>
+    <span class="word">MDT</span>
+    <span class="tag">molecular digital twin</span>
+  </a>
+  <nav class="nav" aria-label="Sections">
+    <a href="#/" data-route="twin">Twin</a>
+    <a href="#/product" data-route="product">Product</a>
+    <a href="#/how" data-route="how">How it works</a>
+    <a href="#/validation" data-route="validation">Validation</a>
+    <a href="#/applications" data-route="applications">Applications</a>
+    <a href="#/company" data-route="company">Company</a>
+    <a href="#/data" data-route="data">Data</a>
+  </nav>
+  <div class="tools">
+    <button class="icon-btn" id="btn-ask" title="Ask the twin (/)" aria-label="Ask the twin"><svg viewBox="0 0 24 24"><path d="M4 5h16v10H9l-5 4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg></button>
+    <button class="icon-btn" id="btn-sound" title="Sound" aria-label="Sound off" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M4 9h4l5-4v14l-5-4H4z" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path class="wave" d="M16 9c1.5 1.5 1.5 4.5 0 6M18.5 6.5c3 3 3 8 0 11" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+    <button class="icon-btn" id="btn-menu" title="Menu" aria-label="Menu"><svg viewBox="0 0 24 24"><path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></button>
+  </div>
+</header>
+
+<div class="flag" id="flag" role="note">
+  <span class="dot"></span>
+  <span class="long"><b>Prototype.</b> Structures and fluorescent-protein spectra are real public data. Stability parameters, mutation effects and instrument readings are synthetic.</span>
+  <span class="short"><b>Prototype.</b> Real structures and spectra; synthetic stability and instrument.</span>
+</div>
+
+<section class="intro" id="intro" aria-live="polite">
+  <div class="intro-inner">
+    <div class="intro-kicker">MDT</div>
+    <h1 class="intro-title"><span>Structure and temperature in.</span><span>Energy and light out.</span><span>Kept true by measurement.</span></h1>
+    <p class="intro-sub">A digital twin of a single biomolecule. Scroll to travel from the cuvette to the electrons.</p>
+    <button class="intro-skip" id="intro-skip">Enter the twin</button>
+  </div>
+</section>
+
+<aside class="panel left" id="panel-left" aria-label="Controls">
+  <div class="sec">
+    <div class="sec-h"><span>Molecule</span><button class="mini" id="btn-mol-toggle" aria-expanded="false">Change</button></div>
+    <div class="mol-current" id="mol-current"></div>
+    <div class="mol-list" id="mol-list" hidden></div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span>Conditions</span></div>
+    <label class="slider">
+      <span class="sl-top"><span>Temperature</span><output id="out-T"></output></span>
+      <input type="range" id="in-T" min="273" max="373" step="0.5" value="298">
+      <span class="sl-scale"><span>0</span><span>25</span><span>50</span><span>75</span><span>100 C</span></span>
+    </label>
+    <label class="slider">
+      <span class="sl-top"><span>pH</span><output id="out-pH"></output></span>
+      <input type="range" id="in-pH" min="3" max="10" step="0.1" value="7.4">
+      <span class="sl-scale"><span>3</span><span>5</span><span>7</span><span>9</span><span>10</span></span>
+    </label>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span>View</span></div>
+    <div class="chips" id="color-modes">
+      <button data-mode="glass" class="on">Glass</button>
+      <button data-mode="element">Element</button>
+      <button data-mode="structure">Structure</button>
+      <button data-mode="burial">Burial</button>
+      <button data-mode="motion">Motion</button>
+      <button data-mode="sensitivity">Sensitivity</button>
+    </div>
+    <div class="toggles">
+      <label><input type="checkbox" id="tg-ensemble" checked><span>Ensemble</span></label>
+      <label><input type="checkbox" id="tg-photons" checked><span>Photons</span></label>
+      <label><input type="checkbox" id="tg-backbone" checked><span>Backbone</span></label>
+      <label><input type="checkbox" id="tg-motion" checked><span>Thermal motion</span></label>
+    </div>
+  </div>
+  <div class="sec" id="sec-mutate">
+    <div class="sec-h"><span>Mutation editor</span><button class="mini" id="btn-clear-mut">Reset</button></div>
+    <div class="mut-hint" id="mut-hint">Click any atom to select its residue.</div>
+    <div class="mut-card" id="mut-card" hidden></div>
+    <div class="mut-applied" id="mut-applied"></div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span>Instrument</span><span class="pill synth">simulated</span></div>
+    <div class="btn-row">
+      <button class="btn" id="btn-melt">Measure a melting curve</button>
+      <button class="btn ghost" id="btn-next">Measure the next best mutant</button>
+    </div>
+    <div class="next-list" id="next-list"></div>
+  </div>
+  <div class="sec">
+    <div class="sec-h"><span>Design</span><span class="pill synth">heuristic</span></div>
+    <div class="design" id="design"></div>
+  </div>
+</aside>
+
+<aside class="panel right" id="panel-right" aria-label="Readout">
+  <div class="ro-head">
+    <div class="ro-kind" id="ro-kind"></div>
+    <div class="ro-name" id="ro-name"></div>
+    <div class="ro-meta" id="ro-meta"></div>
+  </div>
+  <div class="ro-grid" id="ro-grid"></div>
+  <div class="ro-props" id="ro-props"></div>
+  <div class="ro-learn" id="ro-learn"></div>
+</aside>
+
+<div class="dock" id="dock">
+  <div class="scalebar" id="scalebar">
+    <div class="sb-track" id="sb-track"></div>
+    <div class="sb-read"><span class="sb-label">Field of view</span><span class="sb-val" id="sb-val"></span><span class="sb-stage" id="sb-stage"></span></div>
+  </div>
+  <div class="timebar">
+    <div class="tb-top"><span class="sb-label">Time scale</span><span class="tb-val" id="tb-val"></span></div>
+    <input type="range" id="in-time" min="-15" max="3" step="0.1" value="-9" aria-label="Time scale, log seconds per displayed second">
+    <div class="tb-procs" id="tb-procs"></div>
+  </div>
+  <button class="dock-charts" id="btn-charts" aria-expanded="true">Charts</button>
+</div>
+
+<section class="charts" id="charts" aria-label="Charts">
+  <figure class="chart"><figcaption>Stability <em>dG unfold vs temperature</em></figcaption><canvas id="ch-stab"></canvas></figure>
+  <figure class="chart"><figcaption>Melting <em>energy vs spectral readout</em></figcaption><canvas id="ch-melt"></canvas></figure>
+  <figure class="chart"><figcaption id="cap-spec">Spectrum</figcaption><canvas id="ch-spec"></canvas></figure>
+  <figure class="chart wide"><figcaption>Residues <em>predicted alanine-scan dG change, 80 percent band</em></figcaption><canvas id="ch-res"></canvas></figure>
+  <figure class="chart"><figcaption>Learning <em>error against synthetic truth</em></figcaption><canvas id="ch-learn"></canvas></figure>
+</section>
+
+<nav class="mtabs" id="mtabs" aria-label="Panels">
+  <button data-tab="left">Controls</button>
+  <button data-tab="right">Readout</button>
+  <button data-tab="charts">Charts</button>
+  <button data-tab="scale">Scale</button>
+</nav>
+
+<div class="cmd" id="cmd" hidden>
+  <div class="cmd-box">
+    <input id="cmd-in" placeholder="Try: 42 C and pH 5.5 / mutate T203Y / emits above 600 nm and stays folded above 70 C / zoom to orbitals" autocomplete="off" spellcheck="false">
+    <div class="cmd-out" id="cmd-out"></div>
+    <div class="cmd-foot"><span id="cmd-engine">Local parser</span><span>Esc to close</span></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<article class="sheet" id="sheet" hidden>
+  <button class="sheet-close" id="sheet-close" aria-label="Back to the twin">Back to the twin</button>
+  <div class="sheet-inner" id="sheet-inner"></div>
+</article>
+
+<noscript><p class="nojs">This prototype needs JavaScript and WebGL.</p></noscript>
+<script>window.MDT_BUILD="427812746b";</script>
+<script type="module" src="assets/app.8fef959647.js"></script>
+</body>
+</html>
